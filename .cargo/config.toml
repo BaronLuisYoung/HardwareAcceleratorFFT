@@ -1,0 +1,19 @@
+# This section applies settings specifically for the 'thumbv7em-none-eabihf' target,
+# which matches the Cortex-M4F architecture (used by STM32L476RG) with hardware FPU.
+[target.thumbv7em-none-eabihf]
+# Pass an extra flag to the Rust compiler: 
+# -C: configure codegen options
+# link-arg=-Tlink.x: pass the linker argument -Tlink.x, telling it to use your custom linker script named 'link.x'
+#-T stands for "use this linker script"
+#link.x is the name of the linker script file (in your case, describing the STM32's memory layout).
+rustflags = ["-C", "link-arg=-Tlink.x"]
+
+# This section tells Cargo which compilation target to use by default when building.
+[build]
+# Set the default target to 'thumbv7em-none-eabihf', so all builds will cross-compile for the STM32 without needing to specify --target manually.
+target = "thumbv7em-none-eabihf"
+
+# thumb → ARM Thumb instruction set (used in Cortex-M microcontrollers)
+# v7em → ARMv7E-M architecture (used in Cortex-M4/M7)
+# none → No standard OS (bare metal)
+# eabihf → Embedded Application Binary Interface with hardware floating point (f)
