@@ -1,6 +1,3 @@
-//! Uses the user button (PC13) to turn LD2 (PA5) on/off on an STM32L4 Nucleo board
-
-#![no_std]
 #![no_main]
 
 extern crate cortex_m;
@@ -17,14 +14,15 @@ use crate::rt::ExceptionFrame;
 
 #[entry]
 fn main() -> ! {
+    // Log a hello message using defmt
+    defmt::info!("Hello from RTT!");
+
     // Take peripherals
     let cp = cortex_m::Peripherals::take().expect("Failed to take core peripherals");
     let dp = hal::stm32::Peripherals::take().expect("Failed to take device peripherals");
 
-    // Configure clocks
-    let mut flash = dp.FLASH.constrain();
-    let mut rcc = dp.RCC.constrain();
-    let mut pwr = dp.PWR.constrain(&mut rcc.apb1r1);
+    // Configure PA0 as analog input (ADC1_IN5)
+    let _adc_pin = Pin::new(Port::A, 0, PinMode::Analog);
 
     let clocks = rcc.cfgr
         .sysclk(64.MHz())
@@ -55,7 +53,7 @@ fn main() -> ! {
     }
 }
 
-#[exception]
-unsafe fn HardFault(ef: &ExceptionFrame) -> ! {
-    panic!("HardFault: {:#?}", ef);
+#[defmt::panic_handler]
+fn panic() -> ! {
+    cortex_m::asm::udf()
 }

@@ -6,8 +6,8 @@
 # link-arg=-Tlink.x: pass the linker argument -Tlink.x, telling it to use your custom linker script named 'link.x'
 #-T stands for "use this linker script"
 #link.x is the name of the linker script file (in your case, describing the STM32's memory layout).
-rustflags = ["-C", "link-arg=-Tlink.x"]
-
+rustflags = ["-C", "link-arg=-Tmemory.x",]
+runner = "probe-run --chip STM32L476RG"
 # This section tells Cargo which compilation target to use by default when building.
 [build]
 # Set the default target to 'thumbv7em-none-eabihf', so all builds will cross-compile for the STM32 without needing to specify --target manually.
