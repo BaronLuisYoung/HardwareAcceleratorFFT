@@ -1,3 +1,5 @@
+
+
 # This section applies settings specifically for the 'thumbv7em-none-eabihf' target,
 # which matches the Cortex-M4F architecture (used by STM32L476RG) with hardware FPU.
 [target.thumbv7em-none-eabihf]
@@ -6,8 +8,16 @@
 # link-arg=-Tlink.x: pass the linker argument -Tlink.x, telling it to use your custom linker script named 'link.x'
 #-T stands for "use this linker script"
 #link.x is the name of the linker script file (in your case, describing the STM32's memory layout).
-rustflags = ["-C", "link-arg=-Tmemory.x",]
-runner = "probe-run --chip STM32L476RG"
+rustflags = [
+  "-C", "linker=flip-link",
+ "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=-Tdefmt.x",
+  # This is needed if your flash or ram addresses are not aligned to 0x10000 in memory.x
+  # See https://github.com/rust-embedded/cortex-m-quickstart/pull/95
+ "-C", "link-arg=--nmagic",
+]
+
+runner = ["probe-rs", "run", "--chip", "STM32L476RG", "--log-format=oneline"]
 # This section tells Cargo which compilation target to use by default when building.
 [build]
 # Set the default target to 'thumbv7em-none-eabihf', so all builds will cross-compile for the STM32 without needing to specify --target manually.
@@ -17,3 +27,10 @@ target = "thumbv7em-none-eabihf"
 # v7em → ARMv7E-M architecture (used in Cortex-M4/M7)
 # none → No standard OS (bare metal)
 # eabihf → Embedded Application Binary Interface with hardware floating point (f)
+
+[features]
+default = [
+    "defmt-default",
+]
+
+defmt-default = []

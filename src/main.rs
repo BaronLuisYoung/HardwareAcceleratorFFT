@@ -1,59 +1,59 @@
+#![no_std]
 #![no_main]
 
-extern crate cortex_m;
-#[macro_use]
-extern crate cortex_m_rt as rt;
-extern crate panic_semihosting;
-extern crate stm32l4xx_hal as hal;
+use core::panic::PanicInfo;
+use cortex_m::delay::Delay;
+use cortex_m_rt::entry; // The runtime
+use hal::{
+    self,
+    clocks::{Clocks, InputSrc},
+    gpio::{Pin, PinMode, Port},
+    pac,
+};
 
-use hal::delay::Delay;
+use defmt_rtt as _;
 
-use crate::hal::prelude::*;
-use crate::rt::entry;
-use crate::rt::ExceptionFrame;
-
+// This marks the entrypoint of our application. The cortex_m_rt creates some
+// startup code before this, but we don't need to worry about this
 #[entry]
 fn main() -> ! {
-    // Log a hello message using defmt
-    defmt::info!("Hello from RTT!");
+    // Set up CPU peripherals
+    let cp = cortex_m::Peripherals::take().unwrap();
+    // Set up microcontroller peripherals
+    let mut dp = pac::Peripherals::take().unwrap();
 
-    // Take peripherals
-    let cp = cortex_m::Peripherals::take().expect("Failed to take core peripherals");
-    let dp = hal::stm32::Peripherals::take().expect("Failed to take device peripherals");
+    let clock_cfg = Clocks::default();
 
-    // Configure PA0 as analog input (ADC1_IN5)
-    let _adc_pin = Pin::new(Port::A, 0, PinMode::Analog);
+    // Write the clock configuration to the MCU. If you wish, you can modify `clocks` above
+    // in accordance with [its docs](https://docs.rs/stm32-hal2/0.2.0/stm32_hal2/clocks/index.html),
+    // and the `clock_cfg` example.
+    clock_cfg.setup().unwrap();
 
-    let clocks = rcc.cfgr
-        .sysclk(64.MHz())
-        .pclk1(32.MHz())
-        .freeze(&mut flash.acr, &mut pwr);
+    // Setup a delay, based on the Cortex-m systick.
+    let mut delay = Delay::new(cp.SYST, clock_cfg.systick());
+    // Port::A, 0 because the LED is described as PA0 
+    let mut led = Pin::new(Port::A, 0, PinMode::Output);
 
-    // Configure PA5 (LD2) as push-pull output
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb2);
-    let mut ld2 = gpioa
-        .pa5
-        .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
-
-    // Configure PC13 (user button) as input with pull-up
-    //let mut gpioc = dp.GPIOC.split(&mut rcc.ahb2);
-    // let button = gpioc
-    //     .pc13
-    //     .into_pull_up_input(&mut gpioc.moder, &mut gpioc.pupdr);
-
-    let mut timer = Delay::new(cp.SYST, clocks);
-    // Check button state and control LD2
-        loop {
-        // block!(timer.wait()).unwrap();
-        timer.delay_ms(1000_u32);
-        ld2.set_high();
-        // block!(timer.wait()).unwrap();
-        timer.delay_ms(1000_u32);
-        ld2.set_low();
+    // Now, enjoy the lightshow!
+    loop {
+        defmt::debug!("Our demo is alive");
+        led.set_low();
+        delay.delay_ms(1_000);
+        led.set_high();
+        delay.delay_ms(1_000);
     }
 }
 
-#[defmt::panic_handler]
-fn panic() -> ! {
+// same panicking *behavior* as `panic-probe` but doesn't print a panic message
+// this prevents the panic message being printed *twice* when `defmt::panic` is invoked
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
     cortex_m::asm::udf()
+}
+
+/// Terminates the application and makes `probe-run` exit with exit-code = 0
+pub fn exit() -> ! {
+    loop {
+        cortex_m::asm::bkpt();
+    }
 }
