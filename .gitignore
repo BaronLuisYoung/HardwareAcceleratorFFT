@@ -1,3 +1,37 @@
-/target
-nucleo-l476rg.pdf
+# Cargo artifacts
+/target/
+**/target/
+
+# Temporary build files
+*.rs.bk
+*.d
+*.map
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Swap files
+*.swp
+*.swo
+
+# Backup files
+*~
+
+# Binary output files (firmware)
+*.elf
+*.bin
+*.hex
+*.dfu
+
+# Cargo lock files (optional: sometimes needed for reproducible builds)
+# Uncomment if you want to ignore Cargo.lock in libraries
 Cargo.lock
+
+# Generated docs
+/target/doc/
+
+# Misc
+*.log
