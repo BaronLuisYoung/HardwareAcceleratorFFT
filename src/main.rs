@@ -1,59 +1,68 @@
 #![no_std]
 #![no_main]
 
-use core::panic::PanicInfo;
+use cortex_m_rt::entry;
 use cortex_m::delay::Delay;
-use cortex_m_rt::entry; // The runtime
+use core::panic::PanicInfo;
+
 use hal::{
-    self,
-    clocks::{Clocks, InputSrc},
+    adc::{Adc, AdcDevice, AdcConfig, ClockMode, SampleTime, Prescaler, OperationMode},
+    clocks::Clocks,
     gpio::{Pin, PinMode, Port},
     pac,
+    prelude::*,
 };
 
 use defmt_rtt as _;
 
-// This marks the entrypoint of our application. The cortex_m_rt creates some
-// startup code before this, but we don't need to worry about this
 #[entry]
 fn main() -> ! {
-    // Set up CPU peripherals
     let cp = cortex_m::Peripherals::take().unwrap();
-    // Set up microcontroller peripherals
     let mut dp = pac::Peripherals::take().unwrap();
 
+    // Set up clocks
     let clock_cfg = Clocks::default();
-
-    // Write the clock configuration to the MCU. If you wish, you can modify `clocks` above
-    // in accordance with [its docs](https://docs.rs/stm32-hal2/0.2.0/stm32_hal2/clocks/index.html),
-    // and the `clock_cfg` example.
     clock_cfg.setup().unwrap();
 
-    // Setup a delay, based on the Cortex-m systick.
+    // Delay for LED blink
     let mut delay = Delay::new(cp.SYST, clock_cfg.systick());
-    // Port::A, 0 because the LED is described as PA0 
-    let mut led = Pin::new(Port::A, 0, PinMode::Output);
 
-    // Now, enjoy the lightshow!
+    // LED on PA1
+    let mut led = Pin::new(Port::A, 1, PinMode::Output);
+
+    // PA0 as analog input (ADC1_IN5)
+    let _adc_pin = Pin::new(Port::A, 0, PinMode::Analog);
+    
+    // ADC1 in one-shot mode
+    let mut adc = Adc::new_adc1(
+        dp.ADC1,
+        AdcDevice::One,
+        Default::default(),
+        clock_cfg.systick(),
+    )
+    .unwrap();
+
+    // enable the5 GPIOx_ASCR register
+    let gpioa = &dp.GPIOA;
+    let reg = gpioa.ascr();
+    reg.write(|w| w.asc0().set_bit());
+
+
     loop {
-        defmt::debug!("Our demo is alive");
+        // Poll the ADC for channel 5 (PA0)
+        let value: f32 = adc.read_voltage(5).unwrap();
+        defmt::println!("ADC value: {}", value);
+
+        // Blink LED
         led.set_low();
-        delay.delay_ms(1_000);
+        delay.delay_ms(250);
         led.set_high();
-        delay.delay_ms(1_000);
+        delay.delay_ms(250);
     }
 }
 
-// same panicking *behavior* as `panic-probe` but doesn't print a panic message
-// this prevents the panic message being printed *twice* when `defmt::panic` is invoked
+// Panic handler
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    cortex_m::asm::udf()
-}
-
-/// Terminates the application and makes `probe-run` exit with exit-code = 0
-pub fn exit() -> ! {
-    loop {
-        cortex_m::asm::bkpt();
-    }
+    loop {}
 }

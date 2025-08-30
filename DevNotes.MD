@@ -81,18 +81,16 @@ openocd -f interface/stlink.cfg -f target/stm32l4x.cfg -c "arm semihosting enabl
         ```
 
 
-
-
+command to program and run
 $ cargo embed
 
 
 
 
-    let mut vref = adc.enable_vref(&mut delay);
-    let vref_raw = adc.read(&mut vref).unwrap();
-    let vdda_mv = (VDDA_CALIB_MV * VrefCal::get().read() as u32) / vref_raw as u32;
-    rprintln!("Measured VDDA: {} mV", vdda_mv);
-
 
 
     cargo doc --open
+
+
+This is how to use print debug and info dont work for some reason 
+    defmt::println!("Our demo is alive");
